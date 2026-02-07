@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>訪船檢查報告系統 V2.53</title>
+    <style>
+        :root {
+            --primary: #4e73df;
+            --secondary: #858796;
+            --success: #1cc88a;
+            --info: #36b9cc;
+            --warning: #f6c23e;
+            --danger: #e74a3b;
+            --light: #f8f9fc;
+            --dark: #5a5c69;
+            --auto-btn: #6f42c1; /* 自動化按鈕專用紫色 */
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        body {
+            font-family: 'Microsoft JhengHei', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f3f4f6;
+            color: #333;
+            line-height: 1.6;
+            padding-bottom: 80px; /* Space for mobile sticky footer */
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #fff;
+            min-height: 100vh;
+            box-shadow: 0 0 20px rgba(0,0,0,0.05);
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #2c3e50, #4ca1af);
+            color: white;
+            padding: 25px 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 { font-size: 24px; margin-bottom: 5px; text-shadow: 1px 1px 3px rgba(0,0,0,0.3); }
+        .header p { font-size: 14px; opacity: 0.9; letter-spacing: 1px; margin-top: 5px; }
+        
+        /* Content Layout */
+        .content { padding: 15px; }
+
+        /* Sections */
+        .section {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            overflow: hidden;
+            border: 1px solid #e3e6f0;
+        }
+
+        .section-header {
+            background: #f8f9fc;
+            padding: 15px;
+            border-bottom: 1px solid #e3e6f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-toggle {
+            transition: transform 0.3s;
+            color: var(--secondary);
+            font-size: 12px;
+        }
+        
+        .section.collapsed .section-content { display: none; }
+        .section.collapsed .section-toggle { transform: rotate(-90deg); }
+        .section-content { padding: 15px; }
+
+        /* Forms */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        @media (min-width: 768px) {
+            .form-grid { grid-template-columns: repeat(2, 1fr); }
+            .container { margin: 20px auto; border-radius: 15px; min-height: auto; }
+        }
+
+        label { display: block; margin-bottom: 5px; font-size: 13px; font-weight: 600; color: #555; }
+        
+        /* 更新 Input 樣式以包含 datetime-local 和 select */
+        input[type="text"], input[type="date"], input[type="time"], input[type="datetime-local"], textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d3e2;
+            border-radius: 6px;
+            font-size: 15px;
+            transition: border-color 0.2s;
+            background: #fff;
+        }
+        
+        input:focus, textarea:focus, select:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgba(78, 115, 223, 0.1); }
+
+        /* Purpose Checkboxes */
+        .purpose-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .purpose-option input { display: none; }
+        .purpose-option label {
+            display: block;
+            padding: 10px;
+            text-align: center;
+            border: 1px solid #d1d3e2;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+            background: #fff;
+        }
+        .purpose-option input:checked + label {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* Inspection Items UI */
+        .inspection-item {
+            background: #fff;
+            border: 1px solid #e3e6f0;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+        
+        .inspection-item.status-1 { border-left: 5px solid var(--success); }
+        .inspection-item.status-2 { border-left: 5px solid var(--warning); }
+        .inspection-item.status-3 { border-left: 5px solid #fd7e14; }
+        .inspection-item.status-4 { border-left: 5px solid var(--danger); }
+
+        .item-head { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 10px; 
+            gap: 10px;
+        }
+        
+        .item-name { 
+            font-weight: 600; 
+            font-size: 15px; 
+            flex: 1; 
+        }
+
+        .score-btns { display: flex; gap: 5px; flex-shrink: 0; }
+        .score-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            border: 1px solid #d1d3e2;
+            background: #fff;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .score-btn[data-val="1"].active { background: var(--success); color: white; border-color: var(--success); }
+        .score-btn[data-val="2"].active { background: var(--warning); color: white; border-color: var(--warning); }
+        .score-btn[data-val="3"].active { background: #fd7e14; color: white; border-color: #fd7e14; }
+        .score-btn[data-val="4"].active { background: var(--danger); color: white; border-color: var(--danger); }
+
+        /* Photos */
+        .photo-area {
+            background: #fdfdfe;
+            border: 2px dashed #d1d3e2;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            margin-top: 15px;
+        }
+        .photo-area.has-photos { border-style: solid; text-align: left; }
+        
+        .upload-label {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .photo-thumb {
+            position: relative;
+            padding-bottom: 100%;
+            background: #eee;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .photo-thumb img {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .photo-del {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(231, 74, 59, 0.9);
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            cursor: pointer;
+            border: none;
+        }
+
+        /* Sticky Footer */
+        .sticky-actions {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            padding: 10px 15px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+        
+        .action-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            color: white;
+            white-space: nowrap;
+        }
+        
+        .btn-email { background: var(--auto-btn); }
+        .btn-print { background: var(--primary); }
+        .btn-excel { background: #217346; }
+
+        /* Legend */
+        .legend { display: flex; gap: 10px; margin-bottom: 15px; font-size: 12px; flex-wrap: wrap;}
+        .legend span { display: flex; align-items: center; gap: 4px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+
+        #loading {
+            position: fixed;
+            top:0; left:0; right:0; bottom:0;
+            background: rgba(255,255,255,0.9);
+            z-index: 999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            margin-top: 15px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-item { font-size: 12px; color: #666; }
+        .stat-val { font-size: 18px; font-weight: bold; display: block; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>訪船檢查報告</h1>
+        <p>V2.53</p>
+    </div>
+
+    <div class="content">
+        <div class="section" id="sec-basic">
+            <div class="section-header" onclick="toggleSection('sec-basic')">
+                <div class="section-title">📋 基本資訊 Basic Information</div>
+                <div class="section-toggle">▼</div>
+            </div>
+            <div class="section-content">
+                <div class="form-grid">
+                    <div>
+                        <label>船名 Vessel Name *</label>
+                        <input type="text" id="vesselName">
+                    </div>
+                    <div>
+                        <label>港口 Port *</label>
+                        <input type="text" id="port">
+                    </div>
+                    <div>
+                        <label>日期 Date *</label>
+                        <input type="date" id="date">
+                    </div>
+                    <div>
+                        <label>訪船人員 Inspector *</label>
+                        <input type="text" id="inspectorName">
+                    </div>
+                    <div>
+                        <label>單位 Department *</label>
+                        <select id="department">
+                            <option value="">請選擇 Select...</option>
+                            <option value="MT1">MT1</option>
+                            <option value="MT2">MT2</option>
+                            <option value="MT3">MT3</option>
+                            <option value="MT4">MT4</option>
+                            <option value="MT5">MT5</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label>時間紀錄 Time Records (Date & Time)</label>
+                        <div style="display: flex; flex-direction: column; gap:8px;">
+                            <div>
+                                <label style="font-size:12px; color:#666; margin-bottom:2px;">登輪 Boarding:</label>
+                                <input type="datetime-local" id="boardingTime">
+                            </div>
+                            <div>
+                                <label style="font-size:12px; color:#666; margin-bottom:2px;">離船 Departure:</label>
+                                <input type="datetime-local" id="departureTime">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Purpose Section -->
+                <div style="margin-top: 15px;">
+                    <label>訪船目的 Purpose</label>
+                    <div class="purpose-grid">
+                        <div class="purpose-option"><input type="checkbox" id="p1" value="常規訪船"><label for="p1">常規訪船 Regular</label></div>
+                        <div class="purpose-option"><input type="checkbox" id="p2" value="高風險"><label for="p2">高風險 High Risk</label></div>
+                        <div class="purpose-option"><input type="checkbox" id="p3" value="修工監督"><label for="p3">修工監督 Repair</label></div>
+                        <div class="purpose-option"><input type="checkbox" id="p4" value="協助檢驗"><label for="p4">協助檢驗 Survey</label></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section" style="padding: 10px; background: #fff3cd; border: 1px solid #ffeeba;">
+            <div class="legend">
+                <span><i class="dot" style="background:var(--success)"></i> 1-良好</span>
+                <span><i class="dot" style="background:var(--warning)"></i> 2-改善中</span>
+                <span><i class="dot" style="background:#fd7e14"></i> 3-待改善</span>
+                <span><i class="dot" style="background:var(--danger)"></i> 4-需協助</span>
+            </div>
+            <div class="stats-bar" id="statsDisplay"></div>
+        </div>
+
+        <!-- 這裡會生成動態檢查項目 (含絕緣值) -->
+        <div id="inspectionContainer"></div>
+
+        <!-- 警報系統及操車系統手動隔離 (預設摺疊) -->
+        <div class="section collapsed">
+            <div class="section-header" onclick="toggleSection('sec-alarm')">
+                <div class="section-title">🚨 警報及操車手動隔離 Alarm & Maneuvering Isolation</div>
+                <div class="section-toggle">▼</div>
+            </div>
+            <div class="section-content" id="sec-alarm">
+                <textarea id="alarmIsolationResult" rows="3" placeholder="請輸入備註 Remark..."></textarea>
+                <div class="photo-area">
+                    <label class="upload-label">
+                        📷 上傳區域照片 (Upload Photos)
+                        <input type="file" accept="image/*" multiple hidden onchange="handlePhotoUpload('alarmIsolation', this)">
+                    </label>
+                    <div class="photo-grid" id="photos-alarmIsolation"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 備品抽點 (預設摺疊) -->
+        <div class="section collapsed">
+            <div class="section-header" onclick="toggleSection('sec-spare')">
+                <div class="section-title">🔧 20項備品抽點 Spare Parts</div>
+                <div class="section-toggle">▼</div>
+            </div>
+            <div class="section-content" id="sec-spare">
+                <textarea id="sparePartsResult" rows="3" placeholder="請輸入抽點結果..."></textarea>
+                <div class="photo-area">
+                    <label class="upload-label">
+                        📷 上傳區域照片 (Upload Photos)
+                        <input type="file" accept="image/*" multiple hidden onchange="handlePhotoUpload('spareParts', this)">
+                    </label>
+                    <div class="photo-grid" id="photos-spareParts"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 水質化驗 (預設摺疊) -->
+        <div class="section collapsed">
+            <div class="section-header" onclick="toggleSection('sec-water')">
+                <div class="section-title">💧 水質化驗 Water Quality</div>
+                <div class="section-toggle">▼</div>
+            </div>
+            <div class="section-content" id="sec-water">
+                <textarea id="waterQualityResult" rows="3" placeholder="請輸入化驗數據..."></textarea>
+                <div class="photo-area">
+                    <label class="upload-label">
+                        📷 上傳區域照片 (Upload Photos)
+                        <input type="file" accept="image/*" multiple hidden onchange="handlePhotoUpload('waterQuality', this)">
+                    </label>
+                    <div class="photo-grid" id="photos-waterQuality"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 總結評論 (預設摺疊，加入摺疊功能) -->
+        <div class="section collapsed">
+            <div class="section-header" onclick="toggleSection('sec-comment')">
+                <div class="section-title">💬 總結評論 Comment</div>
+                <div class="section-toggle">▼</div>
+            </div>
+            <div class="section-content" id="sec-comment">
+                <textarea id="generalComment" rows="4" placeholder="其他需要反應的事項..."></textarea>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="sticky-actions">
+    <button class="action-btn btn-print" onclick="printReport()">Report</button>
+    <button class="action-btn btn-excel" onclick="generateExcel()">Excel</button>
+    <button class="action-btn btn-email" onclick="handleOneClickAction()">Email</button>
+</div>
+
+<div id="loading">
+    <div class="spinner"></div>
+    <p style="margin-top:15px; font-weight:bold;">處理中 Processing...</p>
+</div>
+
+<script>
+    // --- 數據結構 (V2.50 Final Corrections) ---
+    const inspectionData = {
+        "船上主管評比 Senior Officers Evaluation": [
+            "船長 Master",
+            "大副 Chief Officer",
+            "輪機長 Chief Engineer",
+            "大管 Second Engineer",
+            "其他 Other"
+        ],
+        "駕駛台 Wheelhouse": [
+            "航儀 Navigation Equip",
+            "航行燈 Navigation Lights",
+            "電瓶間 Battery Room",
+            "雷達甲板 Radar Deck",
+            "消防設備及求生信號彈 Fire/Pyro",
+            "環境清潔 House Keeping", 
+            "其他 Other"
+        ],
+        "住艙 Accommodation": [
+            "舷梯及領港梯 Gangway/Pilot Ladder",
+            "電梯 Elevator",
+            "廚房 Galley",
+            "冷氣 A/C",
+            "冰機 Fridge",
+            "緊急發電機 Emergency G/E",
+            "小艇 Life/Rescue Boat",
+            "岸電裝備 AMP", 
+            "⭐️脫硫裝置 EGCS",
+            "救生與消防設備 LSA/FFA",
+            "環境清潔 House Keeping", 
+            "餐廳/沙龍/辦公室 Mess/Saloon/Office",
+            "其他 Other"
+        ],
+        "船體 Ship Hull": [
+            "船殼銹蝕情況 Hull Rust",
+            "馬克及吃水線油漆 Marks/Paint",
+            "海生物 Biofouling",
+            "其他 Other"
+        ],
+        "船艏/船艉 Bow/Stern": [
+            "錨機/絞纜機 Windlass/Winch",
+            "導纜滾輪裝置 Fairleaders",
+            "⭐️舵機房 Steering Gear Rm",
+            "⭐️艏車間 Bow Thruster Rm",
+            "舵機房及艏車間通風 Ventilation",
+            "其他 Other"
+        ],
+        "貨艙 Cargo Hold": [
+            "⭐️通風裝置 Ventilator",
+            "通風管 Air Pipes",
+            "照明燈具 Lighting",
+            "貨艙牆面與艙底 Wall/Bottom",
+            "測深管快關裝置 Sounding Pipe QCV",
+            "綁紮橋 Lashing Bridge"
+        ],
+        "機艙 Engine Room": [
+            "主機 Main Engine",
+            "電機 Generator Engine",
+            "鍋爐 Boiler",
+            "淨油機 Purifier",
+            "焚化爐 Incinerator",
+            "衛生水處理系統 Sewage Plant",
+            "油水分離器 OWS", 
+            "空壓機 Air Compressor",
+            "泵 Pumps",
+            "溫度計/壓力錶 Thermometer/Gauge",
+            "壓艙水處理系統 BWTS", 
+            "艉軸 Stern Tube",
+            "⭐️通風裝置 Ventilation",
+            "油/水艙液位計 Tank Gauge",
+            "管道間 Pipe Tunnel",
+            "快關裝置 Q.C.V",
+            "火災灑水系統 Fire Ext. System",
+            "SCR設備 SCR System",
+            "環境清潔 House Keeping" 
+        ],
+        "絕緣值 Insulation": ["AC 6.6K / 440V", "AC 110V", "Em’cy AC110V", "DC24V"]
+    };
+
+    let appData = {
+        scores: {},
+        remarks: {},
+        photos: {},
+    };
+    
+    // 定義評分對照表
+    const scoreLabels = {
+        1: "1(良好)",
+        2: "2(改善中)",
+        3: "3(待改善)",
+        4: "4(需協助)"
+    };
+    
+    const idMap = {};
+    let globalItemIndex = 0;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initForm();
+        updateStats();
+        if(!document.getElementById('date').value) {
+            document.getElementById('date').valueAsDate = new Date();
+        }
+    });
+
+    function registerId(rawItemId) {
+        if (!idMap[rawItemId]) {
+            globalItemIndex++;
+            idMap[rawItemId] = `item_${globalItemIndex}`;
+        }
+        return idMap[rawItemId];
+    }
+    
+    function getDomId(rawItemId) {
+        return idMap[rawItemId];
+    }
+
+    function initForm() {
+        const container = document.getElementById('inspectionContainer');
+        container.innerHTML = ''; 
+        globalItemIndex = 0;
+
+        let sectionIndex = 0;
+        for (const [area, items] of Object.entries(inspectionData)) {
+            const sectionId = `sec_${sectionIndex}`;
+            const section = document.createElement('div');
+            // 預設全部摺疊，因此加上 collapsed 類別
+            section.className = 'section collapsed';
+
+            let itemsHtml = '';
+            items.forEach((item) => {
+                const rawItemId = `${area}|${item}`;
+                const domId = registerId(rawItemId);
+                
+                // 設定絕緣值預設單位
+                let defaultValue = '';
+                if (area === "絕緣值 Insulation") {
+                    defaultValue = ' MΩ';
+                    appData.remarks[rawItemId] = defaultValue;
+                }
+
+                itemsHtml += `
+                    <div class="inspection-item" id="row-${domId}" data-key="${rawItemId}">
+                        <div class="item-head">
+                            <div class="item-name">${item}</div>
+                            <div class="score-btns" id="btns-${domId}">
+                                <button class="score-btn" onclick="handleScoreClick('${rawItemId.replace(/'/g, "\\'")}', 1)">1</button>
+                                <button class="score-btn" onclick="handleScoreClick('${rawItemId.replace(/'/g, "\\'")}', 2)">2</button>
+                                <button class="score-btn" onclick="handleScoreClick('${rawItemId.replace(/'/g, "\\'")}', 3)">3</button>
+                                <button class="score-btn" onclick="handleScoreClick('${rawItemId.replace(/'/g, "\\'")}', 4)">4</button>
+                            </div>
+                        </div>
+                        <input type="text" placeholder="備註 Remark..." oninput="setRemark('${rawItemId.replace(/'/g, "\\'")}', this.value)" id="rem-${domId}" value="${defaultValue}">
+                    </div>
+                `;
+            });
+            
+            const photoAreaId = `photos_sec_${sectionIndex}`;
+            
+            let photoAreaHtml = `
+                <div class="photo-area">
+                    <label class="upload-label">
+                        📷 上傳區域照片 (Upload Photos)
+                        <input type="file" accept="image/*" multiple hidden onchange="handlePhotoUpload('${area}', this)">
+                    </label>
+                    <div class="photo-grid" id="${photoAreaId}"></div>
+                </div>
+            `;
+
+            section.innerHTML = `
+                <div class="section-header" onclick="toggleSection('${sectionId}')">
+                    <div class="section-title">▶ ${area}</div>
+                    <div class="section-toggle">▼</div>
+                </div>
+                <div class="section-content" id="${sectionId}">
+                    ${itemsHtml}
+                    ${photoAreaHtml}
+                </div>
+            `;
+            container.appendChild(section);
+            sectionIndex++;
+        }
+    }
+
+    function toggleSection(id) {
+        const content = document.getElementById(id);
+        if(content) {
+            const parent = content.parentElement;
+            parent.classList.toggle('collapsed');
+        }
+    }
+
+    function handleScoreClick(rawItemId, score) {
+        if (appData.scores[rawItemId] === score) {
+            delete appData.scores[rawItemId]; 
+            updateItemVisual(rawItemId, null);
+        } else {
+            appData.scores[rawItemId] = score;
+            updateItemVisual(rawItemId, score);
+        }
+        updateStats();
+    }
+
+    function updateItemVisual(rawItemId, score) {
+        const domId = getDomId(rawItemId);
+        if (!domId) return;
+        
+        const row = document.getElementById(`row-${domId}`);
+        if (!row) return;
+
+        row.classList.remove('status-1', 'status-2', 'status-3', 'status-4');
+        if (score) {
+            row.classList.add(`status-${score}`);
+        }
+        
+        const btnContainer = document.getElementById(`btns-${domId}`);
+        if(btnContainer) {
+            const btns = btnContainer.querySelectorAll('.score-btn');
+            btns.forEach((b, index) => {
+                const btnVal = index + 1;
+                if (score && btnVal === score) {
+                    b.classList.add('active');
+                    b.setAttribute('data-val', score);
+                } else {
+                    b.classList.remove('active');
+                    b.setAttribute('data-val', '');
+                }
+            });
+        }
+    }
+
+    function setRemark(rawItemId, val) {
+        appData.remarks[rawItemId] = val;
+    }
+
+    async function handlePhotoUpload(areaKey, input) {
+        if (!input.files || input.files.length === 0) return;
+        toggleLoading(true);
+        
+        let domId;
+        if (areaKey === 'spareParts' || areaKey === 'waterQuality' || areaKey === 'alarmIsolation') {
+            domId = areaKey;
+        } else {
+            const keys = Object.keys(inspectionData);
+            const idx = keys.indexOf(areaKey);
+            domId = `photos_sec_${idx}`;
+        }
+        
+        if (!appData.photos[areaKey]) appData.photos[areaKey] = [];
+
+        for (const file of input.files) {
+            try {
+                const compressed = await compressImage(file);
+                appData.photos[areaKey].push(compressed);
+            } catch (e) {
+                console.error("Compression failed", e);
+                alert("圖片處理失敗: " + file.name);
+            }
+        }
+        renderPhotos(areaKey, domId);
+        input.value = '';
+        toggleLoading(false);
+    }
+
+    function compressImage(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target.result;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const maxWidth = 1024;
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > maxWidth) {
+                        height *= maxWidth / width;
+                        width = maxWidth;
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', 0.7));
+                };
+                img.onerror = error => reject(error);
+            };
+            reader.onerror = error => reject(error);
+        });
+    }
+
+    function renderPhotos(areaKey, domId) {
+        let container = document.getElementById(domId);
+        if(!container && (areaKey === 'spareParts' || areaKey === 'waterQuality' || areaKey === 'alarmIsolation')) {
+             container = document.getElementById(`photos-${areaKey}`);
+        }
+
+        if(!container) return;
+        
+        container.innerHTML = '';
+        if (appData.photos[areaKey] && appData.photos[areaKey].length > 0) {
+            appData.photos[areaKey].forEach((src, idx) => {
+                const div = document.createElement('div');
+                div.className = 'photo-thumb';
+                div.innerHTML = `
+                    <img src="${src}" onclick="viewPhoto('${src}')">
+                    <button class="photo-del" onclick="removePhoto('${areaKey}', '${domId}', ${idx})">×</button>
+                `;
+                container.appendChild(div);
+            });
+            container.parentElement.classList.add('has-photos');
+        } else {
+            container.parentElement.classList.remove('has-photos');
+        }
+    }
+
+    function removePhoto(areaKey, domId, idx) {
+        appData.photos[areaKey].splice(idx, 1);
+        renderPhotos(areaKey, domId);
+    }
+
+    function viewPhoto(src) {
+        const w = window.open("");
+        w.document.write(`<img src="${src}" style="max-width:100%">`);
+    }
+
+    function updateStats() {
+        const counts = {1:0, 2:0, 3:0, 4:0};
+        Object.values(appData.scores).forEach(s => {
+            if(counts[s] !== undefined) counts[s]++;
+        });
+        const html = `
+            <div><span class="stat-val" style="color:var(--success)">${counts[1]}</span><span class="stat-item">良好</span></div>
+            <div><span class="stat-val" style="color:var(--warning)">${counts[2]}</span><span class="stat-item">改善中</span></div>
+            <div><span class="stat-val" style="color:#fd7e14">${counts[3]}</span><span class="stat-item">待改善</span></div>
+            <div><span class="stat-val" style="color:var(--danger)">${counts[4]}</span><span class="stat-item">需協助</span></div>
+        `;
+        document.getElementById('statsDisplay').innerHTML = html;
+    }
+
+    function toggleLoading(show) {
+        const el = document.getElementById('loading');
+        if(el) el.style.display = show ? 'flex' : 'none';
+    }
+
+    function generateExcel(silent = false) {
+        if (!document.getElementById('vesselName').value) {
+            alert("請填寫船名 Vessel Name");
+            return false;
+        }
+        if(!silent) toggleLoading(true);
+        
+        setTimeout(() => {
+            let csv = '\uFEFF'; 
+            csv += `船名,${document.getElementById('vesselName').value}\n`;
+            csv += `日期,${document.getElementById('date').value}\n`;
+            csv += `港口,${document.getElementById('port').value}\n`;
+            csv += `登輪時間,${document.getElementById('boardingTime').value.replace('T', ' ')}\n`;
+            csv += `離船時間,${document.getElementById('departureTime').value.replace('T', ' ')}\n`;
+            
+            // Collect Purpose (Only Chinese)
+            const purposes = [];
+            if (document.getElementById('p1').checked) purposes.push('常規訪船');
+            if (document.getElementById('p2').checked) purposes.push('高風險');
+            if (document.getElementById('p3').checked) purposes.push('修工監督');
+            if (document.getElementById('p4').checked) purposes.push('協助檢驗');
+            const purposeStr = purposes.length > 0 ? purposes.join(', ') : '-';
+            csv += `訪船目的,${purposeStr}\n\n`;
+            
+            csv += "區域,項目,評分,備註\n";
+            for (const [area, items] of Object.entries(inspectionData)) {
+                items.forEach(item => {
+                    const itemId = `${area}|${item}`;
+                    const rawScore = appData.scores[itemId];
+                    const score = rawScore ? scoreLabels[rawScore] : '';
+                    const remark = (appData.remarks[itemId] || '').replace(/,/g, '，').replace(/\n/g, ' ');
+                    csv += `${area},${item},${score},${remark}\n`;
+                });
+            }
+            
+            const alarmRemark = document.getElementById('alarmIsolationResult').value.replace(/,/g, '，').replace(/\n/g, ' ');
+            csv += `警報及操車手動隔離,備註,-,${alarmRemark}\n`;
+
+            const spareResult = document.getElementById('sparePartsResult').value.replace(/,/g, '，').replace(/\n/g, ' ');
+            csv += `備品抽點,結果,-,${spareResult}\n`;
+
+            const waterResult = document.getElementById('waterQualityResult').value.replace(/,/g, '，').replace(/\n/g, ' ');
+            csv += `水質化驗,數據,-,${waterResult}\n`;
+
+            const comment = document.getElementById('generalComment').value.replace(/,/g, '，').replace(/\n/g, ' ');
+            csv += `總結評論,內容,-,${comment}\n`;
+
+            const fileName = `${document.getElementById('vesselName').value}_${document.getElementById('port').value}_${document.getElementById('date').value}.csv`;
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName; 
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            if(!silent) toggleLoading(false);
+        }, 500);
+        return true;
+    }
+
+    // New One Click Action Handler
+    async function handleOneClickAction() {
+        if (!document.getElementById('vesselName').value) {
+            alert("請填寫船名以繼續 / Please enter Vessel Name first.");
+            return;
+        }
+        
+        // Prepare Email Data
+        const vName = document.getElementById('vesselName').value;
+        const port = document.getElementById('port').value;
+        const date = document.getElementById('date').value;
+        
+        // Summary for Email Body
+        const inspector = document.getElementById('inspectorName').value;
+        const dept = document.getElementById('department').value;
+        const boarding = document.getElementById('boardingTime').value.replace('T', ' ');
+        const departure = document.getElementById('departureTime').value.replace('T', ' ');
+        
+        // Collect Purpose
+        const purposes = [];
+        if (document.getElementById('p1').checked) purposes.push('常規訪船');
+        if (document.getElementById('p2').checked) purposes.push('高風險');
+        if (document.getElementById('p3').checked) purposes.push('修工監督');
+        if (document.getElementById('p4').checked) purposes.push('協助檢驗');
+        const purposeStr = purposes.length > 0 ? purposes.join(', ') : '-';
+
+        const subject = encodeURIComponent(`訪船檢查報告 - ${vName} - ${port} - ${date}`);
+        
+        let bodyText = `Dear Sir/Madam,\n\n`;
+        bodyText += `請查收 ${vName} 訪船檢查報告。\n\n`;
+        bodyText += `【訪船資訊摘要 Inspection Summary】\n`;
+        bodyText += `船名 Vessel: ${vName}\n`;
+        bodyText += `港口 Port: ${port}\n`;
+        bodyText += `日期 Date: ${date}\n`;
+        bodyText += `訪船目的 Purpose: ${purposeStr}\n`;
+        bodyText += `檢查員 Inspector: ${inspector} (${dept})\n`;
+        bodyText += `登輪時間 Boarding: ${boarding}\n`;
+        bodyText += `離船時間 Departure: ${departure}\n\n`;
+        bodyText += `詳細檢查內容請參閱附件報告。\n`;
+        
+        const body = encodeURIComponent(bodyText);
+        
+        window.location.href = `mailto:Ship_report@evergreen-marine.com?subject=${subject}&body=${body}`;
+    }
+
+    function buildReportHTML() {
+        const vName = document.getElementById('vesselName').value || 'Report';
+        const date = document.getElementById('date').value || '';
+        const inspector = document.getElementById('inspectorName').value || '';
+        const dept = document.getElementById('department').value || '';
+        const boarding = document.getElementById('boardingTime').value.replace('T', ' ') || '-';
+        const departure = document.getElementById('departureTime').value.replace('T', ' ') || '-';
+        const port = document.getElementById('port').value || '';
+        
+        const purposes = [];
+        if (document.getElementById('p1').checked) purposes.push('常規訪船');
+        if (document.getElementById('p2').checked) purposes.push('高風險');
+        if (document.getElementById('p3').checked) purposes.push('修工監督');
+        if (document.getElementById('p4').checked) purposes.push('協助檢驗');
+        const purposeStr = purposes.length > 0 ? purposes.join(', ') : '-';
+        
+        const pageTitle = `${vName}_${port}_${date}`;
+
+        let styles = `
+            body { font-family: 'Microsoft JhengHei', sans-serif; padding: 20px; max-width: 900px; margin: 0 auto; color: #333; }
+            h1 { text-align: center; border-bottom: 3px solid #4e73df; padding-bottom: 15px; color: #2c3e50; }
+            .info { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; background: #f8f9fc; padding: 20px; margin-bottom: 25px; border-radius: 8px; border: 1px solid #e3e6f0; }
+            .rep-section { margin-bottom: 35px; border: 1px solid #d1d3e2; padding: 20px; border-radius: 8px; page-break-inside: avoid; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+            
+            .rep-section h3 { 
+                margin-top: 0; 
+                background: #4e73df; 
+                color: white; 
+                padding: 10px 15px; 
+                border-radius: 5px; 
+                font-size: 16px; 
+                -webkit-print-color-adjust: exact;
+                text-align: center;
+            }
+
+            .special-header {
+                background-color: #2c3e50 !important; 
+            }
+
+            .rep-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 15px; }
+            .rep-table th { background: #eaecf4; font-weight: bold; color: #555; -webkit-print-color-adjust: exact; }
+            .rep-table th, .rep-table td { border: 1px solid #d1d3e2; padding: 10px; text-align: left; vertical-align: middle; word-wrap: break-word; }
+            .rep-photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-top: 15px; }
+            .rep-photos img { width: 100%; height: 180px; object-fit: cover; border: 1px solid #ddd; border-radius: 4px; }
+            .photo-box { page-break-inside: avoid; break-inside: avoid; }
+            .photo-box img { width: 100%; height: 180px; object-fit: cover; border: 1px solid #ddd; border-radius: 4px; display: block; }
+            .comment-box { background: #fff; padding: 15px; white-space: pre-wrap; line-height: 1.6; border: 1px solid #eee; }
+            
+            /* 強制列印背景色 */
+            @media print {
+                body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                .page-break { page-break-after: always; height: 1px; display: block; }
+            }
+        `;
+
+        const tableHeader = `
+            <colgroup>
+                <col style="width: 40%;">
+                <col style="width: 20%;">
+                <col style="width: 40%;">
+            </colgroup>
+            <tr><th>項目 Item</th><th>評分 Score</th><th>備註 Remark</th></tr>
+        `;
+
+        let itemsHTML = '';
+
+        const counts = {1:0, 2:0, 3:0, 4:0};
+        Object.values(appData.scores).forEach(s => {
+            if(counts[s] !== undefined) counts[s]++;
+        });
+        
+        const statsHTML = `
+            <div class="rep-section">
+                <h3 class="special-header">檢查評分統計 Inspection Score Statistics</h3>
+                <table class="rep-table" style="width:100%; text-align: center; border: none;">
+                    <tr>
+                        <th style="text-align:center; background-color:#fff !important; padding:10px;">
+                            <span class="score-badge" style="background-color:#1cc88a !important; color:white; padding:4px 8px; border-radius:12px; font-weight:bold; -webkit-print-color-adjust: exact; display:inline-block; min-width:80px;">1 (良好)</span>
+                        </th>
+                        <th style="text-align:center; background-color:#fff !important; padding:10px;">
+                            <span class="score-badge" style="background-color:#f6c23e !important; color:white; padding:4px 8px; border-radius:12px; font-weight:bold; -webkit-print-color-adjust: exact; display:inline-block; min-width:80px;">2 (改善中)</span>
+                        </th>
+                        <th style="text-align:center; background-color:#fff !important; padding:10px;">
+                            <span class="score-badge" style="background-color:#fd7e14 !important; color:white; padding:4px 8px; border-radius:12px; font-weight:bold; -webkit-print-color-adjust: exact; display:inline-block; min-width:80px;">3 (待改善)</span>
+                        </th>
+                        <th style="text-align:center; background-color:#fff !important; padding:10px;">
+                            <span class="score-badge" style="background-color:#e74a3b !important; color:white; padding:4px 8px; border-radius:12px; font-weight:bold; -webkit-print-color-adjust: exact; display:inline-block; min-width:80px;">4 (需協助)</span>
+                        </th>
+                    </tr>
+                    <tr>
+                        <td style="text-align:center; font-size:16pt; font-weight:bold; padding:10px;">${counts[1]}</td>
+                        <td style="text-align:center; font-size:16pt; font-weight:bold; padding:10px;">${counts[2]}</td>
+                        <td style="text-align:center; font-size:16pt; font-weight:bold; padding:10px;">${counts[3]}</td>
+                        <td style="text-align:center; font-size:16pt; font-weight:bold; padding:10px;">${counts[4]}</td>
+                    </tr>
+                </table>
+            </div>
+        `;
+        
+        const comment = document.getElementById('generalComment').value;
+        const commentHTML = `
+            <div class="rep-section">
+                <h3 class="special-header">總結評論 Comment</h3>
+                <div class="comment-box">${comment ? comment.replace(/\n/g, '<br>') : ''}</div>
+            </div>
+        `;
+
+        itemsHTML += statsHTML;
+        itemsHTML += commentHTML;
+        itemsHTML += `<div class="page-break"></div>`; 
+
+        let detailedItemsHTML = '';
+        for (const [area, items] of Object.entries(inspectionData)) {
+            const hasScore = items.some(item => appData.scores[`${area}|${item}`]);
+            const areaPhotos = appData.photos[area] || [];
+            
+            const hasRemarks = items.some(item => {
+                const itemId = `${area}|${item}`;
+                return appData.remarks[itemId] && appData.remarks[itemId].trim() !== '';
+            });
+
+            if (hasScore || areaPhotos.length > 0 || hasRemarks) {
+                detailedItemsHTML += `<div class="rep-section"><h3>${area}</h3><table class="rep-table">${tableHeader}`;
+                items.forEach(item => {
+                    const itemId = `${area}|${item}`;
+                    const rawScore = appData.scores[itemId];
+                    const remark = appData.remarks[itemId] || '';
+                    
+                    if (rawScore || (remark && remark.trim() !== '')) {
+                        let scoreHtml = '';
+                        if(rawScore) {
+                            let color = rawScore==1?'#1cc88a':rawScore==2?'#f6c23e':rawScore==3?'#fd7e14':'#e74a3b';
+                            scoreHtml = `<span style="background-color:${color} !important; color:white; padding:2px 8px; border-radius:10px; font-size:12px; -webkit-print-color-adjust: exact; display:inline-block; min-width:80px; text-align:center;">${scoreLabels[rawScore]}</span>`;
+                        } else {
+                            scoreHtml = '-';
+                        }
+                        
+                        detailedItemsHTML += `<tr><td>${item}</td><td style="text-align:center">${scoreHtml}</td><td>${remark}</td></tr>`;
+                    }
+                });
+                detailedItemsHTML += `</table>`;
+                
+                if (areaPhotos.length > 0) {
+                    detailedItemsHTML += `<div class="rep-photos">`;
+                    areaPhotos.forEach(src => detailedItemsHTML += `<div class="photo-box"><img src="${src}"></div>`);
+                    detailedItemsHTML += `</div>`;
+                }
+                detailedItemsHTML += `</div>`;
+            }
+        }
+        
+        itemsHTML += detailedItemsHTML;
+        
+        const makeTextSection = (title, content, photos) => {
+            if(!content && (!photos || photos.length === 0)) return '';
+            let html = `<div class="rep-section"><h3>${title}</h3>`;
+            if(content) html += `<div class="comment-box">${content.replace(/\n/g, '<br>')}</div>`;
+            if(photos && photos.length > 0) {
+                html += `<div class="rep-photos">` + photos.map(s => `<div class="photo-box"><img src="${s}"></div>`).join('') + `</div>`;
+            }
+            html += `</div>`;
+            return html;
+        };
+
+        const alarmResult = document.getElementById('alarmIsolationResult').value;
+        itemsHTML += makeTextSection('警報及操車手動隔離 Alarm & Maneuvering Isolation', alarmResult, appData.photos['alarmIsolation']);
+
+        const spareResult = document.getElementById('sparePartsResult').value;
+        itemsHTML += makeTextSection('備品抽點 Spare Parts', spareResult, appData.photos['spareParts']);
+
+        const waterResult = document.getElementById('waterQualityResult').value;
+        itemsHTML += makeTextSection('水質化驗 Water Quality', waterResult, appData.photos['waterQuality']);
+
+        return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>${pageTitle}</title>
+            <meta charset="UTF-8">
+            <style>${styles}</style>
+        </head>
+        <body>
+            <h1>訪船檢查報告 Vessel Inspection Report</h1>
+            <div class="info">
+                <div><strong>船名 Vessel:</strong> ${vName}</div>
+                <div><strong>日期 Date:</strong> ${date}</div>
+                <div><strong>港口 Port:</strong> ${port}</div>
+                <div><strong>檢查員 Inspector:</strong> ${inspector}</div>
+                <div><strong>單位 Dept:</strong> ${dept}</div>
+                <div><strong>訪船目的 Purpose:</strong> ${purposeStr}</div>
+                <div><strong>登輪 Boarding:</strong> ${boarding}</div>
+                <div><strong>離船 Departure:</strong> ${departure}</div>
+            </div>
+            ${itemsHTML}
+        </body>
+        </html>
+        `;
+    }
+
+    function printReport() {
+        if (!document.getElementById('vesselName').value) {
+            alert("請填寫船名 Vessel Name");
+            return;
+        }
+        toggleLoading(true);
+        setTimeout(() => {
+            try {
+                const reportHTML = buildReportHTML();
+                
+                const pWin = window.open('', '_blank');
+                if(!pWin) {
+                    alert("請允許彈出視窗以進行列印 (Please allow popups)");
+                    toggleLoading(false);
+                    return;
+                }
+                
+                pWin.document.open();
+                pWin.document.write(reportHTML);
+                pWin.document.write('<script>window.onload = function(){ setTimeout(function(){ window.print(); }, 500); }<\/script>');
+                pWin.document.close();
+                
+            } catch (e) {
+                console.error(e);
+                alert("列印失敗: " + e.message);
+            } finally {
+                toggleLoading(false);
+            }
+        }, 500);
+    }
+</script>
+</body>
+</html>
