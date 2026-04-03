@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>訪船檢查報告系統 V2.53</title>
+    <title>訪船檢查報告系統 V3.0</title>
     <style>
         :root {
             --primary: #4e73df;
@@ -320,7 +320,7 @@
 <div class="container">
     <div class="header">
         <h1>訪船檢查報告</h1>
-        <p>V2.53</p>
+        <p>V3.0</p>
     </div>
 
     <div class="content">
@@ -333,7 +333,9 @@
                 <div class="form-grid">
                     <div>
                         <label>船名 Vessel Name *</label>
-                        <input type="text" id="vesselName">
+                        <select id="vesselName">
+                            <option value="">請選擇船名 Select Vessel...</option>
+                        </select>
                     </div>
                     <div>
                         <label>港口 Port *</label>
@@ -349,7 +351,7 @@
                     </div>
                     <div>
                         <label>單位 Department *</label>
-                        <select id="department">
+                        <select id="department" onchange="updateVesselOptions()">
                             <option value="">請選擇 Select...</option>
                             <option value="MT1">MT1</option>
                             <option value="MT2">MT2</option>
@@ -557,12 +559,104 @@
         "絕緣值 Insulation": ["AC 6.6K / 440V", "AC 110V", "Em’cy AC110V", "DC24V"]
     };
 
+    // --- 船名資料庫 (來自船舶管理表.xlsx) ---
+    const vesselDatabase = {
+        "MT1": [
+            {cn:"立睦輪",en:"UNI-ACCORD"},{cn:"立沛輪",en:"UNI-ACTIVE"},{cn:"立敏輪",en:"UNI-ADROIT"},
+            {cn:"長珠輪",en:"EVER PEARL"},{cn:"立美輪",en:"UNI-PERFECT"},{cn:"立行輪",en:"UNI-POPULAR"},
+            {cn:"立誠輪",en:"UNI-PROBITY"},{cn:"立慎輪",en:"UNI-PRUDENT"},{cn:"長尊輪",en:"EVER PRIDE"},
+            {cn:"長首輪",en:"EVER PRIMA"},{cn:"立揆輪",en:"UNI-PREMIER"},{cn:"立揚輪",en:"UNI-PROMOTE"},
+            {cn:"立昌輪",en:"UNI-PROSPER"},{cn:"長祐輪",en:"EVER ULYSSES"},{cn:"長麒輪",en:"EVER UNICORN"},
+            {cn:"長都輪",en:"EVER URBAN"},{cn:"長宜輪",en:"EVER USEFUL"},{cn:"長實輪",en:"EVER UTILE"},
+            {cn:"長偉輪",en:"EVER SUPERB"},{cn:"長企輪",en:"EVER SIGMA"},{cn:"長照輪",en:"EVER SHINE"},
+            {cn:"長怡輪",en:"EVER SMILE"},{cn:"長慧輪",en:"EVER SMART"},{cn:"長定輪",en:"EVER STEADY"},
+            {cn:"長強輪",en:"EVER STRONG"},{cn:"長峰輪",en:"EVER SUMMIT"},{cn:"長安輪",en:"EVER SAFETY"},
+            {cn:"長敬輪",en:"EVER SALUTE"},{cn:"長朝輪",en:"EVER VIM"},{cn:"長諾輪",en:"EVER VOW"},
+            {cn:"長篤輪",en:"EVER VERA"},{cn:"長闊輪",en:"EVER VAST"},{cn:"長吉輪",en:"EVER VIVA"},
+            {cn:"長碧輪",en:"EVER VERT"},{cn:"長活輪",en:"EVER VIVE"},{cn:"長諧輪",en:"EVER VERSE"},
+            {cn:"長蘊輪",en:"EVER VERVE"},{cn:"長展輪",en:"EVER VISTA"},{cn:"長氛輪",en:"EVER VIBE"}
+        ],
+        "MT2": [
+            {cn:"長喜輪",en:"EVER BLISS"},{cn:"長芳輪",en:"EVER BALMY"},{cn:"長源輪",en:"EVER BIRTH"},
+            {cn:"長本輪",en:"EVER BASIS"},{cn:"長明輪",en:"EVER BEADY"},{cn:"長弘輪",en:"EVER BEAMY"},
+            {cn:"長鵬輪",en:"EVER BOOMY"},{cn:"長泰輪",en:"EVER BLOOM"},{cn:"長固輪",en:"EVER BRACE"},
+            {cn:"長合輪",en:"EVER BEFIT"},{cn:"長佳輪",en:"EVER BRAVE"},{cn:"長恆輪",en:"EVER BEING"},
+            {cn:"長育輪",en:"EVER BREED"},{cn:"長卓輪",en:"EVER BOARD"},{cn:"長進輪",en:"EVER BUILD"},
+            {cn:"長福輪",en:"EVER BLESS"},{cn:"長康輪",en:"EVER BURLY"},{cn:"長晶輪",en:"EVER BLINK"},
+            {cn:"長新輪",en:"EVER CREATE"},{cn:"長達輪",en:"EVER CONVEY"},{cn:"長馳輪",en:"EVER CAREER"},
+            {cn:"長桂輪",en:"EVER CHAMP"},{cn:"長銘輪",en:"EVER CHART"},{cn:"長鷹輪",en:"EVER EAGLE"},
+            {cn:"長菁輪",en:"EVER ELITE"},{cn:"長欽輪",en:"EVER ENVOY"},{cn:"長德輪",en:"EVER ETHIC"},
+            {cn:"長傑輪",en:"EVER EXCEL"},{cn:"長萬輪",en:"EVER EON"},{cn:"長鳴輪",en:"EVER ECHO"},
+            {cn:"長頂輪",en:"EVER TOP"},{cn:"長上輪",en:"EVER WIN"},{cn:"長絡輪",en:"EVER WEB"},
+            {cn:"長賦輪",en:"EVER WIZ"},{cn:"長毅輪",en:"EVER WILL"},{cn:"長哲輪",en:"EVER WISE"},
+            {cn:"長願輪",en:"EVER WISH"},{cn:"長流輪",en:"EVER WAFT"},{cn:"長溫輪",en:"EVER WARM"},
+            {cn:"長世輪",en:"EVER WORLD"},{cn:"長適輪",en:"EVER COZY"}
+        ],
+        "MT3": [
+            {cn:"長範輪",en:"EVER ACE"},{cn:"長儀輪",en:"EVER ACT"},{cn:"長標輪",en:"EVER AIM"},
+            {cn:"長岳輪",en:"EVER ALP"},{cn:"長為輪",en:"EVER ARM"},{cn:"長彩輪",en:"EVER ART"},
+            {cn:"長益輪",en:"EVER ALOT"},{cn:"長穎輪",en:"EVER APEX"},{cn:"長韻輪",en:"EVER ARIA"},
+            {cn:"長皇輪",en:"EVER ATOP"},{cn:"長崇輪",en:"EVER ACME"},{cn:"長年輪",en:"EVER AEON"},
+            {cn:"長友輪",en:"EVER ALLY"},{cn:"長信輪",en:"EVER FAITH"},{cn:"長聚輪",en:"EVER FOCUS"},
+            {cn:"長鋒輪",en:"EVER FRONT"},{cn:"長程輪",en:"EVER FORWARD"},{cn:"長裕輪",en:"EVER FORTUNE"},
+            {cn:"長永輪",en:"EVER FOREVER"},{cn:"長誠輪",en:"EVER FRANK"},{cn:"長遠輪",en:"EVER FUTURE"},
+            {cn:"長極輪",en:"EVER MAX"},{cn:"長速輪",en:"EVER MACH"},{cn:"長賢輪",en:"EVER MAGI"},
+            {cn:"長量輪",en:"EVER MASS"},{cn:"長杆輪",en:"EVER MAST"},{cn:"長賞輪",en:"EVER MEED"},
+            {cn:"長兆輪",en:"EVER MEGA"},{cn:"長記輪",en:"EVER MEMO"},{cn:"長親輪",en:"EVER MILD"},
+            {cn:"長模輪",en:"EVER MODE"},{cn:"長善輪",en:"EVER MERCY"},{cn:"長鉅輪",en:"EVER MOST"},
+            {cn:"長思輪",en:"EVER MUSE"},{cn:"長宏輪",en:"EVER MARCO"},{cn:"長奇輪",en:"EVER MAGIC"},
+            {cn:"長宙輪",en:"EVER MAGUS"},{cn:"長協輪",en:"EVER MATCH"},{cn:"長雄輪",en:"EVER MAGNA"},
+            {cn:"長元輪",en:"EVER META"},{cn:"長典輪",en:"EVER MODEL"}
+        ],
+        "MT4": [
+            {cn:"長華輪",en:"EVER LAMBENT"},{cn:"長滿輪",en:"EVER LADEN"},{cn:"長久輪",en:"EVER LASTING"},
+            {cn:"長成輪",en:"EVER LEADING"},{cn:"長冠輪",en:"EVER LAUREL"},{cn:"長秤輪",en:"EVER LIBRA"},
+            {cn:"長正輪",en:"EVER LAWFUL"},{cn:"長領輪",en:"EVER LEADER"},{cn:"長寶輪",en:"EVER LEGACY"},
+            {cn:"長青輪",en:"EVER LIVEN"},{cn:"長理輪",en:"EVER LOGIC"},{cn:"長傳輪",en:"EVER LEGEND"},
+            {cn:"長博輪",en:"EVER LEARNED"},{cn:"長征輪",en:"EVER LEGION"},{cn:"長蓮輪",en:"EVER LOTUS"},
+            {cn:"長茂輪",en:"EVER LIVELY"},{cn:"長慈輪",en:"EVER LENIENT"},{cn:"長忠輪",en:"EVER LOYAL"},
+            {cn:"長朗輪",en:"EVER LIBERAL"},{cn:"長幸輪",en:"EVER LUKY"},{cn:"長旺輪",en:"EVER LIVING"},
+            {cn:"長連輪",en:"EVER LINKING"},{cn:"長輝輪",en:"EVER LUCID"},{cn:"長亮輪",en:"EVER LUCENT"},
+            {cn:"長通輪",en:"EVER LISSOME"},{cn:"長盛輪",en:"EVER LOADING"},{cn:"長月輪",en:"EVER LUNAR"},
+            {cn:"長頌輪",en:"EVER LYRIC"},{cn:"長麗輪",en:"EVER LOVELY"},{cn:"長昇輪",en:"EVER LIFTING"},
+            {cn:"長旭輪",en:"EVER ORIENT"},{cn:"長洋輪",en:"EVER OCEAN"},{cn:"長澤輪",en:"EVER OASIS"},
+            {cn:"長順輪",en:"EVER ORDER"},{cn:"長智輪",en:"EVER GENIUS"},{cn:"長雅輪",en:"EVER GENTLE"},
+            {cn:"長俊輪",en:"EVER GIFTED"},{cn:"長賀輪",en:"EVER GREET"},{cn:"長政輪",en:"EVER GOVERN"}
+        ]
+    };
+
+    function updateVesselOptions() {
+        const dept = document.getElementById('department').value;
+        const select = document.getElementById('vesselName');
+        const currentVal = select.value;
+        select.innerHTML = '<option value="">請選擇船名 Select Vessel...</option>';
+        let vessels = [];
+        if (dept && vesselDatabase[dept]) {
+            vessels = vesselDatabase[dept];
+        } else {
+            for (const list of Object.values(vesselDatabase)) vessels = vessels.concat(list);
+        }
+        vessels.sort((a, b) => {
+            const aUni = a.en.startsWith('UNI-') ? 0 : 1;
+            const bUni = b.en.startsWith('UNI-') ? 0 : 1;
+            if (aUni !== bUni) return aUni - bUni;
+            return a.en.localeCompare(b.en);
+        });
+        vessels.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = `${v.cn}(${v.en})`;
+            opt.textContent = `${v.cn}(${v.en})`;
+            select.appendChild(opt);
+        });
+        if (currentVal) select.value = currentVal;
+    }
+
     let appData = {
         scores: {},
         remarks: {},
         photos: {},
     };
-    
+
     // 定義評分對照表
     const scoreLabels = {
         1: "1(良好)",
@@ -576,6 +670,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         initForm();
+        updateVesselOptions();
         updateStats();
         if(!document.getElementById('date').value) {
             document.getElementById('date').valueAsDate = new Date();
