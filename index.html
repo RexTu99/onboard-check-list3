@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>訪船檢查報告系統 V3.2</title>
+    <title>訪船檢查報告系統 V3.3</title>
     <style>
         :root {
             --primary: #4e73df;
@@ -320,7 +320,7 @@
 <div class="container">
     <div class="header">
         <h1>訪船檢查報告</h1>
-        <p>V3.2</p>
+        <p>V3.3</p>
     </div>
 
     <div class="content">
@@ -944,8 +944,20 @@
             opt.textContent = `${v.cn}(${v.en})`;
             select.appendChild(opt);
         });
-        if (currentVal) select.value = currentVal;
-        fillVesselInfo();
+        // V3.3: 保留已選船名。若已選的船不在此單位清單內，額外補一個選項，
+        // 避免切換單位時船名與自動帶入的船旗/船級/塢修/航線被洗掉。
+        if (currentVal) {
+            const exists = Array.from(select.options).some(o => o.value === currentVal);
+            if (!exists) {
+                const keep = document.createElement('option');
+                keep.value = currentVal;
+                keep.textContent = currentVal;
+                select.insertBefore(keep, select.options[1] || null);
+            }
+            select.value = currentVal;
+        }
+        // 船名沒有變動時不重跑 fillVesselInfo，保留使用者手動修改的塢修/航線
+        if (select.value !== currentVal) fillVesselInfo();
     }
 
     let appData = {
