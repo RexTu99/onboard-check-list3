@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>訪船檢查報告系統 V3.1</title>
+    <title>訪船檢查報告系統 V3.2</title>
     <style>
         :root {
             --primary: #4e73df;
@@ -320,7 +320,7 @@
 <div class="container">
     <div class="header">
         <h1>訪船檢查報告</h1>
-        <p>V3.1</p>
+        <p>V3.2</p>
     </div>
 
     <div class="content">
@@ -345,6 +345,16 @@
                         <div>
                             <label>船級 Class</label>
                             <input type="text" id="vesselClass" readonly style="background:#f8f9fc;" placeholder="自動帶入">
+                        </div>
+                    </div>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <div>
+                            <label>上次塢修 Last Docking</label>
+                            <input type="text" id="lastDocking" style="background:#f8f9fc;" placeholder="自動帶入,可修改">
+                        </div>
+                        <div>
+                            <label>航線 Route</label>
+                            <input type="text" id="serviceRoute" oninput="this.dataset.userEdited='1'" style="background:#f8f9fc;" placeholder="自動帶入,可修改">
                         </div>
                     </div>
                     <div>
@@ -636,6 +646,238 @@
         ]
     };
 
+    // --- 上次塢修/航線 預填資料 (V3.2) 來源: 塢修離廠日.xlsx(H欄) / VSL_SCHEDULE.xlsx(A欄) ---
+    const lastDockingData = {
+        "EVER ACE":"JUN/2026","EVER ACT":"SEP/2026","EVER AIM":"OCT/2026",
+        "EVER ALP":"DEC/2026","EVER ARM":"DEC/2026","EVER CAREER":"OCT/2026",
+        "EVER CONVEY":"SEP/2026","EVER COZY":"MAY/2026","EVER CREATE":"MAR/2026",
+        "EVER EAGLE":"NOV/2026","EVER ELITE":"DEC/2025","EVER ENVOY":"MAY/2027",
+        "EVER ETHIC":"JAN/2026","EVER EXCEL":"APR/2025","EVER FOCUS":"MAY/2025",
+        "EVER FOREVER":"JAN/2026","EVER FORWARD":"JUN/2025","EVER FRANK":"FEB/2026",
+        "EVER FRONT":"NOV/2025","EVER FUTURE":"MAR/2026","EVER LADEN":"SEP/2025",
+        "EVER LAMBENT":"APR/2025","EVER LASTING":"JUL/2025","EVER LAUREL":"MAY/2025",
+        "EVER LAWFUL":"NOV/2025","EVER LEADER":"DEC/2025","EVER LEADING":"NOV/2025",
+        "EVER LEARNED":"APR/2026","EVER LEGACY":"NOV/2025","EVER LEGEND":"JAN/2026",
+        "EVER LEGION":"MAR/2026","EVER LENIENT":"MAR/2027","EVER LIBRA":"NOV/2025",
+        "EVER LIFTING":"JUN/2025","EVER LINKING":"JUN/2026","EVER LIVELY":"MAY/2026",
+        "EVER LIVEN":"JUN/2025","EVER LIVING":"JUN/2026","EVER LOADING":"DEC/2026",
+        "EVER LOGIC":"MAR/2026","EVER LOTUS":"NOV/2026","EVER LOVELY":"APR/2025",
+        "EVER LOYAL":"APR/2027","EVER LUCENT":"MAY/2026","EVER LUCID":"DEC/2026",
+        "EVER LYRIC":"MAY/2025","EVER OASIS":"JUN/2026","EVER OCEAN":"APR/2026",
+        "EVER ORDER":"JUN/2026","EVER ORIENT":"JAN/2026","EVER PEARL":"DEC/2026",
+        "EVER PRIDE":"NOV/2025","EVER PRIMA":"APR/2026","EVER SAFETY":"NOV/2025",
+        "EVER SALUTE":"AUG/2025","EVER SHINE":"MAR/2025","EVER SIGMA":"MAR/2025",
+        "EVER SMILE":"APR/2026","EVER STEADY":"DEC/2026","EVER STRONG":"APR/2027",
+        "EVER SUMMIT":"JUL/2025","EVER SUPERB":"JUN/2026","EVER TOP":"DEC/2026",
+        "EVER ULYSSES":"JUL/2025","EVER UNICORN":"OCT/2025","ITAL UNICA":"MAR/2026",
+        "ITAL UNIVERSO":"MAY/2026","ITAL USODIMARE":"JUN/2025","UNI-ACCORD":"OCT/2025",
+        "UNI-ACTIVE":"DEC/2025","UNI-ADROIT":"MAR/2026","UNI-PERFECT":"APR/2025",
+        "UNI-POPULAR":"JUL/2025","UNI-PREMIER":"MAR/2026","UNI-PROBITY":"JUL/2026",
+        "UNI-PROMOTE":"JAN/2026","UNI-PROSPER":"OCT/2026","UNI-PRUDENT":"MAY/2025"
+    };
+
+    // 航線含日期區間 [航線, 最早ARRIVAL_DATE, 最晚ARRIVAL_DATE, 筆數]，取與報告日期最近者
+    const routeScheduleData = {
+        "EVER ACE":[["CEM",20260928,20270117,14]],
+        "EVER ACME":[["CEM",20260902,20270207,17]],
+        "EVER ACT":[["CEM",20260924,20261227,11]],
+        "EVER AEON":[["CEM",20260914,20270103,14]],
+        "EVER AIM":[["CEM",20260905,20270124,16],["WFS",20260923,20260923,1]],
+        "EVER ALLY":[["CEM",20260911,20261220,12]],
+        "EVER ALOT":[["CEM",20260905,20270314,18]],
+        "EVER ALP":[["CEM",20260902,20270307,22],["WFS",20261112,20261112,1]],
+        "EVER APEX":[["CEM",20260905,20261226,16]],
+        "EVER ARIA":[["CEM",20260909,20270221,18]],
+        "EVER ARM":[["CEM",20260916,20270328,23],["WFS",20261127,20261127,1]],
+        "EVER ART":[["CEM",20260902,20270131,15]],
+        "EVER ATOP":[["CEM",20260902,20270321,22]],
+        "EVER BALMY":[["KTP",20260906,20270201,60]],
+        "EVER BASIS":[["KTP",20260901,20270125,59]],
+        "EVER BEADY":[["KTP",20260904,20270118,55]],
+        "EVER BEAMY":[["JPI",20260903,20270210,68]],
+        "EVER BEFIT":[["JPI",20260906,20270203,65]],
+        "EVER BEING":[["KTP",20260901,20270208,65]],
+        "EVER BIRTH":[["JPI",20260903,20270217,70]],
+        "EVER BLESS":[["NSD",20260901,20270411,124]],
+        "EVER BLINK":[["JPI",20260902,20270303,76]],
+        "EVER BLISS":[["JPI",20260902,20270127,68]],
+        "EVER BLOOM":[["NSD",20260901,20270324,112]],
+        "EVER BOARD":[["NSD",20260903,20270417,125]],
+        "EVER BOOMY":[["JPI",20260902,20270224,74]],
+        "EVER BRACE":[["AEF4",20260906,20261011,8]],
+        "EVER BRAVE":[["CIX7",20260902,20261104,18]],
+        "EVER BREED":[["NSD",20260901,20270401,117]],
+        "EVER BUILD":[["JPI",20260901,20270127,64]],
+        "EVER BURLY":[["CIM",20260903,20261130,24]],
+        "EVER CAREER":[["CAJ",20260904,20261126,34]],
+        "EVER CHAMP":[["ADL",20260901,20270124,69]],
+        "EVER CHART":[["ADL",20260903,20270117,64]],
+        "EVER CONVEY":[["HBT",20260907,20261214,30]],
+        "EVER COZY":[["GPM",20260903,20270123,63]],
+        "EVER CREATE":[["HBT",20260904,20261214,32]],
+        "EVER EAGLE":[["TPN",20260906,20261008,8],["WFS",20261011,20261011,1]],
+        "EVER ECHO":[["CES",20260919,20270110,18]],
+        "EVER EDIT":[["CES",20260905,20261206,15]],
+        "EVER ELITE":[["TPN",20260910,20261229,22]],
+        "EVER EMIT":[["CES",20260928,20270104,13]],
+        "EVER ENVOY":[["CAT",20260906,20270112,20]],
+        "EVER EON":[["CES",20260901,20270222,26]],
+        "EVER ETHIC":[["AGI",20260903,20270102,27]],
+        "EVER EVEN":[["CES",20260915,20270201,18]],
+        "EVER EXCEL":[["AGI",20260906,20270116,29]],
+        "EVER FAITH":[["ESA",20260903,20261221,17]],
+        "EVER FOCUS":[["NUE",20260904,20261021,7],["WSA",20261012,20270103,15]],
+        "EVER FOREVER":[["NUE",20260901,20261114,15]],
+        "EVER FORTUNE":[["WSA2",20260905,20270116,20]],
+        "EVER FORWARD":[["CPS",20260904,20261208,14]],
+        "EVER FRANK":[["NUE",20260910,20261107,12],["CPS",20261023,20261215,9]],
+        "EVER FRONT":[["WSA",20260905,20261220,16]],
+        "EVER FUTURE":[["CES",20260901,20261008,5],["TAE",20261012,20261227,18]],
+        "EVER GENIUS":[["CES",20260923,20270117,18]],
+        "EVER GENTLE":[["CES",20260905,20261220,17]],
+        "EVER GIFTED":[["MD2",20260902,20270228,24]],
+        "EVER GOVERN":[["CEM",20260924,20261212,11]],
+        "EVER GREET":[["CEM",20260903,20270404,22]],
+        "EVER LADEN":[["CIX2",20260908,20270126,30]],
+        "EVER LAMBENT":[["OGME",20260910,20261122,12]],
+        "EVER LASTING":[["OGEC",20260904,20261208,16]],
+        "EVER LAUREL":[["OGWC",20260908,20260914,2],["CPS",20260929,20261124,10]],
+        "EVER LAWFUL":[["WSA",20260901,20261122,12]],
+        "EVER LEADER":[["OGES",20260908,20261102,8]],
+        "EVER LEADING":[["OGES",20260904,20260904,1],["WSA",20260908,20261206,15]],
+        "EVER LEARNED":[["CIX2",20260909,20261215,21]],
+        "EVER LEGACY":[["CPS",20260902,20261117,11]],
+        "EVER LEGEND":[["WSA",20260910,20261005,6],["NUE",20261004,20270109,18]],
+        "EVER LEGION":[["CPS",20260904,20261023,8],["NUE",20261022,20270123,17]],
+        "EVER LENIENT":[["CIX3",20260902,20261231,25]],
+        "EVER LIBERAL":[["WSA",20260905,20261124,11],["CIX3",20261029,20261217,11]],
+        "EVER LIBRA":[["CIX2",20260903,20270119,30]],
+        "EVER LIFTING":[["CIX5",20260906,20261226,31]],
+        "EVER LINKING":[["CPS",20260903,20261013,7]],
+        "EVER LISSOME":[["WSA",20260901,20261129,14]],
+        "EVER LIVELY":[["NUE",20260902,20261128,16]],
+        "EVER LIVEN":[["OGME",20260905,20261023,10]],
+        "EVER LIVING":[["CIX8",20260902,20261109,16]],
+        "EVER LOADING":[["WSA",20260914,20270124,20]],
+        "EVER LOGIC":[["CPS",20260903,20261110,11]],
+        "EVER LOTUS":[["WSA",20260902,20261011,8]],
+        "EVER LOVELY":[["CPS",20260911,20261222,15]],
+        "EVER LOYAL":[["OGME",20260907,20261005,8]],
+        "EVER LUCENT":[["WSA",20260907,20261115,11]],
+        "EVER LUCID":[["CIX3",20260904,20261030,12]],
+        "EVER LUKY":[["OGME",20260908,20260919,2],["AUG",20260926,20270105,17]],
+        "EVER LUNAR":[["CIX4",20260905,20270103,29]],
+        "EVER LYRIC":[["CIX2",20260907,20261229,23]],
+        "EVER MACH":[["HTW",20260906,20261230,17]],
+        "EVER MAGI":[["AUE",20261008,20270301,22]],
+        "EVER MAGIC":[["HTW",20260912,20261209,11]],
+        "EVER MAGNA":[["AUE",20260901,20261207,12]],
+        "EVER MAGUS":[["HTW",20260904,20270127,19]],
+        "EVER MASS":[["AUE",20260902,20270128,17]],
+        "EVER MAST":[["AUE",20260911,20270104,16]],
+        "EVER MATCH":[["HTW",20260904,20261216,12]],
+        "EVER MAX":[["AUE",20260901,20261210,13]],
+        "EVER MEED":[["CES",20260927,20261109,9]],
+        "EVER MEGA":[["TAE",20260902,20261019,10],["CES",20261013,20261213,10]],
+        "EVER MEMO":[["OGWC",20260902,20261021,6],["HTW",20261027,20261223,8]],
+        "EVER MERCY":[["AUE",20261001,20270215,22]],
+        "EVER META":[["AUE",20260903,20270118,20]],
+        "EVER MILD":[["HTW",20260901,20261230,16]],
+        "EVER MODE":[["HTW",20260915,20270120,17]],
+        "EVER MODEL":[["AUE",20260904,20261214,14]],
+        "EVER MOST":[["HTW",20260904,20270113,18]],
+        "EVER MUSE":[["AUE",20260907,20270201,23]],
+        "EVER OASIS":[["CIT",20260902,20261223,53]],
+        "EVER OCEAN":[["TIX",20260901,20261222,33]],
+        "EVER ORDER":[["HKH",20260905,20261107,30]],
+        "EVER ORIENT":[["CIT",20260902,20261215,49]],
+        "EVER PEARL":[["CPH",20260905,20270119,51]],
+        "EVER PRIDE":[["IAS",20260901,20270111,57]],
+        "EVER PRIMA":[["CPM",20260904,20261231,35]],
+        "EVER SAFETY":[["AUG",20260902,20261103,13],["TPN",20261110,20270105,12]],
+        "EVER SALUTE":[["TPN",20260922,20261201,12],["AUG",20260925,20261001,3]],
+        "EVER SHINE":[["TPN",20260901,20261222,20]],
+        "EVER SIGMA":[["TPN",20260910,20261220,17]],
+        "EVER SMART":[["NEAX",20260903,20270123,27]],
+        "EVER SMILE":[["TPN",20260911,20261204,16]],
+        "EVER STEADY":[["CIX8",20260905,20260926,6],["WFS",20261010,20261010,1]],
+        "EVER STRONG":[["TPN",20260901,20261006,5]],
+        "EVER SUMMIT":[["TPN",20260903,20261213,18]],
+        "EVER SUPERB":[["NEAX",20260907,20270206,28]],
+        "EVER TOP":[["CES",20260901,20261115,11]],
+        "EVER ULYSSES":[["SAF",20260907,20261230,15]],
+        "EVER UNICORN":[["SAF",20260902,20270118,18]],
+        "EVER URBAN":[["AGI",20260904,20261212,22]],
+        "EVER USEFUL":[["SAF",20260911,20261218,15]],
+        "EVER UTILE":[["SAF",20260903,20270101,19]],
+        "EVER VAST":[["NCS",20260901,20261216,52]],
+        "EVER VERA":[["AEF",20260904,20261228,19]],
+        "EVER VERSE":[["NSB",20260901,20270109,48]],
+        "EVER VERT":[["NSB",20260903,20270116,50]],
+        "EVER VERVE":[["NSB",20260902,20270102,45]],
+        "EVER VIBE":[["NCS",20260904,20261223,54]],
+        "EVER VIM":[["AEF2",20260908,20270108,16]],
+        "EVER VISTA":[["NSB",20260904,20261226,42]],
+        "EVER VIVA":[["NCS",20260901,20261202,46]],
+        "EVER VIVE":[["NCS",20260902,20261209,50]],
+        "EVER VOW":[["AEF",20260902,20261214,18]],
+        "EVER WAFT":[["NSC",20260901,20270123,78]],
+        "EVER WARM":[["NSC",20260901,20270116,76]],
+        "EVER WEB":[["CTX",20260903,20270113,40]],
+        "EVER WILL":[["CVM",20260903,20270103,45]],
+        "EVER WIN":[["CTX",20260907,20270120,40],["NSC",20270114,20270130,11]],
+        "EVER WISE":[["CVM",20260905,20261227,42]],
+        "EVER WISH":[["CTX",20260902,20270203,44]],
+        "EVER WIZ":[["CTX",20260905,20270127,45]],
+        "EVER WORLD":[["NSC",20260903,20270113,70]],
+        "UNI-ACCORD":[["SYS",20260902,20261114,15]],
+        "UNI-ACTIVE":[["CPH",20260903,20270112,43]],
+        "UNI-ADROIT":[["STW",20260901,20261207,71]],
+        "UNI-PERFECT":[["CPM",20260901,20270112,52]],
+        "UNI-POPULAR":[["JCH",20260903,20270223,75]],
+        "UNI-PREMIER":[["JCH",20260903,20270214,73]],
+        "UNI-PROBITY":[["HBT",20260901,20261221,35]],
+        "UNI-PROMOTE":[["TBS2",20260903,20261104,37]],
+        "UNI-PROSPER":[["TBS",20260901,20261124,29],["WFS",20260914,20260914,1]],
+        "UNI-PRUDENT":[["SHIA",20260901,20260909,4],["KHP",20260911,20261124,43]]
+    };
+
+    function currentReportYmd() {
+        const iso = document.getElementById('date').value;
+        if (iso) return parseInt(iso.replace(/-/g, ''), 10);
+        const d = new Date();
+        return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+    }
+
+    function ymdToDays(ymd) {
+        const s = String(ymd);
+        return Date.UTC(+s.slice(0, 4), +s.slice(4, 6) - 1, +s.slice(6, 8)) / 86400000;
+    }
+
+    function pickRoute(en) {
+        const segs = routeScheduleData[en];
+        if (!segs) return '';
+        const day = ymdToDays(currentReportYmd());
+        let best = '', bestDist = Infinity, bestCnt = -1;
+        for (const [line, min, max, cnt] of segs) {
+            const lo = ymdToDays(min), hi = ymdToDays(max);
+            const dist = day < lo ? lo - day : (day > hi ? day - hi : 0);
+            if (dist < bestDist || (dist === bestDist && cnt > bestCnt)) {
+                best = line; bestDist = dist; bestCnt = cnt;
+            }
+        }
+        return best;
+    }
+
+    function refreshRoute(force) {
+        const el = document.getElementById('serviceRoute');
+        if (!force && el.dataset.userEdited === '1') return;
+        const val = document.getElementById('vesselName').value;
+        const mEn = val.match(/\(([^)]+)\)/);
+        el.value = mEn ? pickRoute(mEn[1].trim().toUpperCase()) : '';
+        delete el.dataset.userEdited;
+    }
+
     // --- 船旗/船級自動帶入 (V3.1) ---
     const flagNames = {GB:"英國", HK:"香港", IT:"義大利", PA:"巴拿馬", SG:"新加坡", TW:"台灣"};
 
@@ -646,7 +888,7 @@
 
     function fillVesselInfo() {
         const val = document.getElementById('vesselName').value;
-        let flag = '', cls = '';
+        let flag = '', cls = '', docking = '';
         const m = val.match(/^(.+?)\(/);
         if (m) {
             const cn = m[1];
@@ -655,8 +897,15 @@
                 if (v) { flag = formatFlag(v.flag); cls = v.cls || ''; break; }
             }
         }
+        const mEn = val.match(/\(([^)]+)\)/);
+        if (mEn) {
+            const en = mEn[1].trim().toUpperCase();
+            docking = lastDockingData[en] || '';
+        }
         document.getElementById('vesselFlag').value = flag;
         document.getElementById('vesselClass').value = cls;
+        document.getElementById('lastDocking').value = docking;
+        refreshRoute(true);
     }
 
     // --- 日期星期顯示 (V3.1) ---
@@ -669,6 +918,7 @@
     function updateDateWeekday() {
         const iso = document.getElementById('date').value;
         document.getElementById('dateWeekday').textContent = formatDateWithWeekday(iso);
+        refreshRoute(false);
     }
 
     function updateVesselOptions() {
@@ -978,6 +1228,8 @@
             csv += `船名,${document.getElementById('vesselName').value}\n`;
             csv += `船旗,${document.getElementById('vesselFlag').value}\n`;
             csv += `船級,${document.getElementById('vesselClass').value}\n`;
+            csv += `上次塢修,${document.getElementById('lastDocking').value}\n`;
+            csv += `航線,${document.getElementById('serviceRoute').value}\n`;
             csv += `日期,${formatDateWithWeekday(document.getElementById('date').value)}\n`;
             csv += `港口,${document.getElementById('port').value}\n`;
             csv += `登輪時間,${document.getElementById('boardingTime').value.replace('T', ' ')}\n`;
@@ -1043,6 +1295,8 @@
         const date = formatDateWithWeekday(document.getElementById('date').value);
         const vFlag = document.getElementById('vesselFlag').value;
         const vClass = document.getElementById('vesselClass').value;
+        const vDocking = document.getElementById('lastDocking').value;
+        const vRoute = document.getElementById('serviceRoute').value;
         
         // Summary for Email Body
         const inspector = document.getElementById('inspectorName').value;
@@ -1066,6 +1320,8 @@
         bodyText += `船名 Vessel: ${vName}\n`;
         bodyText += `船旗 Flag: ${vFlag}\n`;
         bodyText += `船級 Class: ${vClass}\n`;
+        bodyText += `上次塢修 Last Docking: ${vDocking}\n`;
+        bodyText += `航線 Route: ${vRoute}\n`;
         bodyText += `港口 Port: ${port}\n`;
         bodyText += `日期 Date: ${date}\n`;
         bodyText += `訪船目的 Purpose: ${purposeStr}\n`;
@@ -1085,6 +1341,8 @@
         const dateDisplay = formatDateWithWeekday(date);
         const vFlag = document.getElementById('vesselFlag').value || '-';
         const vClass = document.getElementById('vesselClass').value || '-';
+        const vDocking = document.getElementById('lastDocking').value || '-';
+        const vRoute = document.getElementById('serviceRoute').value || '-';
         const inspector = document.getElementById('inspectorName').value || '';
         const dept = document.getElementById('department').value || '';
         const boarding = document.getElementById('boardingTime').value.replace('T', ' ') || '-';
@@ -1270,6 +1528,8 @@
                 <div><strong>日期 Date:</strong> ${dateDisplay}</div>
                 <div><strong>船旗 Flag:</strong> ${vFlag}</div>
                 <div><strong>船級 Class:</strong> ${vClass}</div>
+                <div><strong>上次塢修 Last Docking:</strong> ${vDocking}</div>
+                <div><strong>航線 Route:</strong> ${vRoute}</div>
                 <div><strong>港口 Port:</strong> ${port}</div>
                 <div><strong>檢查員 Inspector:</strong> ${inspector}</div>
                 <div><strong>單位 Dept:</strong> ${dept}</div>
